@@ -16,10 +16,12 @@
   "main": "index.js",
   "scripts": {
     "prettier:fix": "prettier . --write",
-    "eslint:fix": "eslint . --fix"
+    "eslint:fix": "eslint . --fix",
+    "start": "cypress open"
   },
   "dependencies": {
-    "cypress": "^15.18.0"
+    "cypress": "^15.18.0",
+    "cypress-xpath": "^2.0.1"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
