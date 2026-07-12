@@ -17,8 +17,6 @@ export default defineConfig([
       "cypress/no-unnecessary-waiting": "off",
     },
   },
-
-  // ✅ Cypress (correct way)
   {
     files: ["cypress/**/*.js"],
     ...cypress.configs.recommended,
