@@ -226,7 +226,7 @@ describe("Sign up", () => {
     it("shows that Email is required", () => {
       cy.get(EMAIL_INPUT).focus().blur();
 
-      expectValidationMessage(EMAIL_INPUT, "Email is required");
+      expectValidationMessage(EMAIL_INPUT, "Email required");
     });
 
     it("validates an Email without an @ symbol", () => {
