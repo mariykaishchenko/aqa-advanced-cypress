@@ -1,4 +1,5 @@
 /// <reference types="cypress" />
+import CarsApi from "../../api/CarsApi";
 import AddCarForm from "../../pom/forms/AddCarForm";
 import AddFuelForm from "../../pom/forms/AddFuelForm";
 import SignInForm from "../../pom/forms/SignInForm";
@@ -35,7 +36,7 @@ describe("Add fuel expense popup", () => {
 
   before(() => {
     login();
-    GaragePage.deleteAllCars();
+    CarsApi.deleteAllCars();
     cars.forEach((car) => GaragePage.addCar(car));
   });
 
@@ -46,7 +47,7 @@ describe("Add fuel expense popup", () => {
 
   after(() => {
     GaragePage.visit();
-    GaragePage.deleteAllCars();
+    CarsApi.deleteAllCars();
   });
 
   it("shows the popup title", () => {

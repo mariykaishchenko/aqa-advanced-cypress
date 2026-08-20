@@ -57,30 +57,6 @@ class GaragePage {
     return DeleteConfirmationForm.clickConfirmButton();
   }
 
-  deleteAllCars() {
-    const removeCars = () => {
-      cy.wait(500); // Wait for the page to update after deleting a car
-      cy.get("body").then(($body) => {
-        if ($body.find(".car-item").length === 0) {
-          return;
-        }
-
-        cy.get(".car-item")
-          .first()
-          .within(() => {
-            cy.get(".car_edit").click();
-          });
-
-        CarEditForm.clickRemoveCarButton();
-        DeleteConfirmationForm.clickConfirmButton();
-
-        removeCars();
-      });
-    };
-
-    removeCars();
-  }
-
   addCar(car) {
     this.clickAddCarButton();
     AddCarForm.fillForm(car);
