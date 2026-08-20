@@ -1,9 +1,10 @@
 /// <reference types="cypress" />
 import "cypress-xpath";
+import urls from "../../../test-data/urls.json";
 
 describe("Homepage", () => {
   beforeEach(() => {
-    cy.visit("/");
+    cy.visit(urls.HOME_PAGE);
   });
 
   context("Header", () => {

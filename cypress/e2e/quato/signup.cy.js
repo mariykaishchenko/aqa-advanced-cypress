@@ -1,32 +1,25 @@
 /// <reference types="cypress" />
+import urls from "../../test-data/urls.json";
+import colors from "../../test-data/colors.json";
+import SignupForm from "../../pom/forms/SignupForm";
+import HomePage from "../../pom/pages/HomePage";
 
 describe("Sign up", () => {
   const VALID_NAME = "Cypress";
   const VALID_LAST_NAME = "Tester";
   const VALID_PASSWORD = "Password1!";
-  const INVALID_BORDER_COLOR = "rgb(220, 53, 69)";
-  const EXISTING_EMAIL = "mariyka.ishchenko@gmail.com";
-  const REGISTER_BUTTON_TEXT = "Register";
+  const INVALID_BORDER_COLOR = colors.INVALID_BORDER_COLOR;
+  const EXISTING_EMAIL = Cypress.env("MAIN_USER_EMAIL");
   let VALID_EMAIL; // initialized in beforeEach to ensure uniqueness for each test run
 
-  const NAME_INPUT = "#signupName";
-  const LAST_NAME_INPUT = "#signupLastName";
-  const EMAIL_INPUT = "#signupEmail";
-  const PASSWORD_INPUT = "#signupPassword";
-  const REPEAT_PASSWORD_INPUT = "#signupRepeatPassword";
-
-  const expectValidationMessage = (inputSelector, expectedMessage) => {
-    cy.get(inputSelector)
-      .closest(".form-group")
-      .contains(".invalid-feedback", expectedMessage)
-      .should("be.visible");
+  const expectValidationMessage = (input, expectedMessage) => {
+    SignupForm.getValidationMessage(input, expectedMessage).should(
+      "be.visible",
+    );
   };
-  const expectFieldToBeValid = (inputSelector) => {
-    cy.get(inputSelector).should("not.have.class", "is-invalid");
-    cy.get(inputSelector)
-      .closest(".form-group")
-      .find(".invalid-feedback")
-      .should("not.exist");
+  const expectFieldToBeValid = (input) => {
+    input.should("not.have.class", "is-invalid");
+    input.closest(".form-group").find(".invalid-feedback").should("not.exist");
   };
 
   beforeEach(() => {
@@ -34,102 +27,103 @@ describe("Sign up", () => {
   });
 
   beforeEach(() => {
-    cy.visit("/");
-    cy.contains("button", "Sign up").click();
+    HomePage.visit();
+    HomePage.clickSignUpButton();
   });
 
   it("should be visible", () => {
-    cy.contains(".modal-dialog", "Registration").should("be.visible");
+    SignupForm.modal.should("be.visible");
   });
 
   it("hides the popup when the cross icon is clicked", () => {
-    cy.get(".modal-dialog button.close").click();
+    SignupForm.close();
 
-    cy.contains(".modal-dialog", "Registration").should("not.be.visible");
+    SignupForm.modal.should("not.be.visible");
   });
 
   it("registers a user with valid details and navigates to the garage", () => {
-    cy.get(NAME_INPUT).type(VALID_NAME);
-    cy.get(LAST_NAME_INPUT).type(VALID_LAST_NAME);
-    cy.get(EMAIL_INPUT).type(VALID_EMAIL);
-    cy.get(PASSWORD_INPUT).type(VALID_PASSWORD);
-    cy.get(REPEAT_PASSWORD_INPUT).type(VALID_PASSWORD);
-
-    cy.contains("button", REGISTER_BUTTON_TEXT).click();
+    SignupForm.fillForm({
+      name: VALID_NAME,
+      lastName: VALID_LAST_NAME,
+      email: VALID_EMAIL,
+      password: VALID_PASSWORD,
+    });
+    SignupForm.clickRegisterButton();
 
     cy.contains("Registration complete").should("be.visible");
-    cy.url().should("include", "/panel/garage");
+    cy.url().should("include", urls.GARAGE_PAGE);
   });
 
   it("does not register a user with an existing email", () => {
-    cy.get(NAME_INPUT).type(VALID_NAME);
-    cy.get(LAST_NAME_INPUT).type(VALID_LAST_NAME);
-    cy.get(EMAIL_INPUT).type(EXISTING_EMAIL);
-    cy.get(PASSWORD_INPUT).type(VALID_PASSWORD);
-    cy.get(REPEAT_PASSWORD_INPUT).type(VALID_PASSWORD);
-    cy.contains("button", REGISTER_BUTTON_TEXT).click();
+    SignupForm.fillForm({
+      name: VALID_NAME,
+      lastName: VALID_LAST_NAME,
+      email: EXISTING_EMAIL,
+      password: VALID_PASSWORD,
+    });
+    SignupForm.clickRegisterButton();
 
     cy.contains("User already exists").should("be.visible");
   });
 
   context("Name field", () => {
     it("shows that Name is required", () => {
-      cy.get(NAME_INPUT).focus().blur();
+      SignupForm.nameInput.focus().blur();
 
-      expectValidationMessage(NAME_INPUT, "Name is required");
+      expectValidationMessage(SignupForm.nameInput, "Name is required");
     });
 
     it("validates a Name shorter than 2 characters", () => {
-      cy.get(NAME_INPUT).type("A").blur();
+      SignupForm.enterName("A").blur();
 
       expectValidationMessage(
-        NAME_INPUT,
+        SignupForm.nameInput,
         "Name has to be from 2 to 20 characters long",
       );
     });
 
     it("validates a Name longer than 20 characters", () => {
-      cy.get(NAME_INPUT).type("A".repeat(21)).blur();
+      SignupForm.enterName("A".repeat(21)).blur();
 
       expectValidationMessage(
-        NAME_INPUT,
+        SignupForm.nameInput,
         "Name has to be from 2 to 20 characters long",
       );
     });
 
     it("validates a Name with non-English characters", () => {
-      cy.get(NAME_INPUT).type("Іван").blur();
+      SignupForm.enterName("Іван").blur();
 
-      expectValidationMessage(NAME_INPUT, "Name is invalid");
+      expectValidationMessage(SignupForm.nameInput, "Name is invalid");
     });
 
     it("allows a Name with 2 characters", () => {
-      cy.get(NAME_INPUT).type("Al").blur();
+      SignupForm.enterName("Al").blur();
 
-      expectFieldToBeValid(NAME_INPUT);
+      expectFieldToBeValid(SignupForm.nameInput);
     });
 
     it("allows a Name with 20 characters", () => {
-      cy.get(NAME_INPUT).type("A".repeat(20)).blur();
+      SignupForm.enterName("A".repeat(20)).blur();
 
-      expectFieldToBeValid(NAME_INPUT);
+      expectFieldToBeValid(SignupForm.nameInput);
     });
 
     it("ignores all spaces in Name", () => {
       const nameWithSpaces = " Cy press ";
 
-      cy.get(NAME_INPUT).type(nameWithSpaces).blur();
+      SignupForm.enterName(nameWithSpaces).blur();
 
-      cy.get(NAME_INPUT).should(
+      SignupForm.nameInput.should(
         "have.value",
         nameWithSpaces.replaceAll(" ", ""),
       );
     });
 
     it("shows a red Name input when validation fails", () => {
-      cy.get(NAME_INPUT).focus().blur();
+      SignupForm.nameInput.focus().blur();
 
-      cy.get(NAME_INPUT).should(
+      SignupForm.nameInput.should(
         "have.css",
         "border-color",
         INVALID_BORDER_COLOR,
@@ -137,74 +131,77 @@ describe("Sign up", () => {
     });
 
     it("disables Register when Name validation fails", () => {
-      cy.get(NAME_INPUT).type("A").blur();
-      cy.get(LAST_NAME_INPUT).type(VALID_LAST_NAME);
-      cy.get(EMAIL_INPUT).type(VALID_EMAIL);
-      cy.get(PASSWORD_INPUT).type(VALID_PASSWORD);
-      cy.get(REPEAT_PASSWORD_INPUT).type(VALID_PASSWORD);
+      SignupForm.enterName("A").blur();
+      SignupForm.enterLastName(VALID_LAST_NAME);
+      SignupForm.enterEmail(VALID_EMAIL);
+      SignupForm.enterPassword(VALID_PASSWORD);
+      SignupForm.enterRepeatPassword(VALID_PASSWORD);
 
-      cy.contains("button", REGISTER_BUTTON_TEXT).should("be.disabled");
+      SignupForm.isRegisterButtonDisabled();
     });
   });
 
   context("Last name field", () => {
     it("shows that Last name is required", () => {
-      cy.get(LAST_NAME_INPUT).focus().blur();
+      SignupForm.lastNameInput.focus().blur();
 
-      expectValidationMessage(LAST_NAME_INPUT, "Last name is required");
+      expectValidationMessage(
+        SignupForm.lastNameInput,
+        "Last name is required",
+      );
     });
 
     it("validates a Last name shorter than 2 characters", () => {
-      cy.get(LAST_NAME_INPUT).type("A").blur();
+      SignupForm.enterLastName("A").blur();
 
       expectValidationMessage(
-        LAST_NAME_INPUT,
+        SignupForm.lastNameInput,
         "Last name has to be from 2 to 20 characters long",
       );
     });
 
     it("validates a Last name longer than 20 characters", () => {
-      cy.get(LAST_NAME_INPUT).type("A".repeat(21)).blur();
+      SignupForm.enterLastName("A".repeat(21)).blur();
 
       expectValidationMessage(
-        LAST_NAME_INPUT,
+        SignupForm.lastNameInput,
         "Last name has to be from 2 to 20 characters long",
       );
     });
 
     it("validates a Last name with non-English characters", () => {
-      cy.get(LAST_NAME_INPUT).type("Іванов").blur();
+      SignupForm.enterLastName("Іванов").blur();
 
-      expectValidationMessage(LAST_NAME_INPUT, "Last name is invalid");
+      expectValidationMessage(SignupForm.lastNameInput, "Last name is invalid");
     });
 
     it("allows a Last name with 2 characters", () => {
-      cy.get(LAST_NAME_INPUT).type("Li").blur();
+      SignupForm.enterLastName("Li").blur();
 
-      expectFieldToBeValid(LAST_NAME_INPUT);
+      expectFieldToBeValid(SignupForm.lastNameInput);
     });
 
     it("allows a Last name with 20 characters", () => {
-      cy.get(LAST_NAME_INPUT).type("A".repeat(20)).blur();
+      SignupForm.enterLastName("A".repeat(20)).blur();
 
-      expectFieldToBeValid(LAST_NAME_INPUT);
+      expectFieldToBeValid(SignupForm.lastNameInput);
     });
 
     it("ignores all spaces in Last name", () => {
       const lastNameWithSpaces = " Tes ter ";
 
-      cy.get(LAST_NAME_INPUT).type(lastNameWithSpaces).blur();
+      SignupForm.enterLastName(lastNameWithSpaces).blur();
 
-      cy.get(LAST_NAME_INPUT).should(
+      SignupForm.lastNameInput.should(
         "have.value",
         lastNameWithSpaces.replaceAll(" ", ""),
       );
     });
 
     it("shows a red Last name input when validation fails", () => {
-      cy.get(LAST_NAME_INPUT).focus().blur();
+      SignupForm.lastNameInput.focus().blur();
 
-      cy.get(LAST_NAME_INPUT).should(
+      SignupForm.lastNameInput.should(
         "have.css",
         "border-color",
         INVALID_BORDER_COLOR,
@@ -212,51 +209,51 @@ describe("Sign up", () => {
     });
 
     it("disables Register when Last name validation fails", () => {
-      cy.get(NAME_INPUT).type(VALID_NAME);
-      cy.get(LAST_NAME_INPUT).type("A").blur();
-      cy.get(EMAIL_INPUT).type(VALID_EMAIL);
-      cy.get(PASSWORD_INPUT).type(VALID_PASSWORD);
-      cy.get(REPEAT_PASSWORD_INPUT).type(VALID_PASSWORD);
+      SignupForm.enterName(VALID_NAME);
+      SignupForm.enterLastName("A").blur();
+      SignupForm.enterEmail(VALID_EMAIL);
+      SignupForm.enterPassword(VALID_PASSWORD);
+      SignupForm.enterRepeatPassword(VALID_PASSWORD);
 
-      cy.contains("button", REGISTER_BUTTON_TEXT).should("be.disabled");
+      SignupForm.isRegisterButtonDisabled();
     });
   });
 
   context("Email field", () => {
     it("shows that Email is required", () => {
-      cy.get(EMAIL_INPUT).focus().blur();
+      SignupForm.emailInput.focus().blur();
 
-      expectValidationMessage(EMAIL_INPUT, "Email required");
+      expectValidationMessage(SignupForm.emailInput, "Email required");
     });
 
     it("validates an Email without an @ symbol", () => {
-      cy.get(EMAIL_INPUT).type("cypress.example.com").blur();
+      SignupForm.enterEmail("cypress.example.com").blur();
 
-      expectValidationMessage(EMAIL_INPUT, "Email is incorrect");
+      expectValidationMessage(SignupForm.emailInput, "Email is incorrect");
     });
 
     it("validates an Email without a domain", () => {
-      cy.get(EMAIL_INPUT).type("cypress@").blur();
+      SignupForm.enterEmail("cypress@").blur();
 
-      expectValidationMessage(EMAIL_INPUT, "Email is incorrect");
+      expectValidationMessage(SignupForm.emailInput, "Email is incorrect");
     });
 
     it("validates an Email without a username", () => {
-      cy.get(EMAIL_INPUT).type("@example.com").blur();
+      SignupForm.enterEmail("@example.com").blur();
 
-      expectValidationMessage(EMAIL_INPUT, "Email is incorrect");
+      expectValidationMessage(SignupForm.emailInput, "Email is incorrect");
     });
 
     it("validates an Email without a domain extension", () => {
-      cy.get(EMAIL_INPUT).type("cypress@example").blur();
+      SignupForm.enterEmail("cypress@example").blur();
 
-      expectValidationMessage(EMAIL_INPUT, "Email is incorrect");
+      expectValidationMessage(SignupForm.emailInput, "Email is incorrect");
     });
 
     it("shows a red Email input when validation fails", () => {
-      cy.get(EMAIL_INPUT).focus().blur();
+      SignupForm.emailInput.focus().blur();
 
-      cy.get(EMAIL_INPUT).should(
+      SignupForm.emailInput.should(
         "have.css",
         "border-color",
         INVALID_BORDER_COLOR,
@@ -264,13 +261,13 @@ describe("Sign up", () => {
     });
 
     it("disables Register when Email validation fails", () => {
-      cy.get(NAME_INPUT).type(VALID_NAME);
-      cy.get(LAST_NAME_INPUT).type(VALID_LAST_NAME);
-      cy.get(EMAIL_INPUT).type("cypress.example.com").blur();
-      cy.get(PASSWORD_INPUT).type(VALID_PASSWORD);
-      cy.get(REPEAT_PASSWORD_INPUT).type(VALID_PASSWORD);
+      SignupForm.enterName(VALID_NAME);
+      SignupForm.enterLastName(VALID_LAST_NAME);
+      SignupForm.enterEmail("cypress.example.com").blur();
+      SignupForm.enterPassword(VALID_PASSWORD);
+      SignupForm.enterRepeatPassword(VALID_PASSWORD);
 
-      cy.contains("button", REGISTER_BUTTON_TEXT).should("be.disabled");
+      SignupForm.isRegisterButtonDisabled();
     });
   });
 
@@ -279,57 +276,72 @@ describe("Sign up", () => {
       "Password has to be from 8 to 15 characters long and contain at least one integer, one capital, and one small letter";
 
     it("shows that Password is required", () => {
-      cy.get(PASSWORD_INPUT).focus().blur();
+      SignupForm.passwordInput.focus().blur();
 
-      expectValidationMessage(PASSWORD_INPUT, "Password required");
+      expectValidationMessage(SignupForm.passwordInput, "Password required");
     });
 
     it("validates a Password shorter than 8 characters", () => {
-      cy.get(PASSWORD_INPUT).type("Pass12!").blur();
+      SignupForm.enterPassword("Pass12!").blur();
 
-      expectValidationMessage(PASSWORD_INPUT, PASSWORD_INVALID_MESSAGE);
+      expectValidationMessage(
+        SignupForm.passwordInput,
+        PASSWORD_INVALID_MESSAGE,
+      );
     });
 
     it("validates a Password longer than 15 characters", () => {
-      cy.get(PASSWORD_INPUT).type("Password1234567!").blur();
+      SignupForm.enterPassword("Password1234567!").blur();
 
-      expectValidationMessage(PASSWORD_INPUT, PASSWORD_INVALID_MESSAGE);
+      expectValidationMessage(
+        SignupForm.passwordInput,
+        PASSWORD_INVALID_MESSAGE,
+      );
     });
 
     it("validates a Password without a number", () => {
-      cy.get(PASSWORD_INPUT).type("Password!").blur();
+      SignupForm.enterPassword("Password!").blur();
 
-      expectValidationMessage(PASSWORD_INPUT, PASSWORD_INVALID_MESSAGE);
+      expectValidationMessage(
+        SignupForm.passwordInput,
+        PASSWORD_INVALID_MESSAGE,
+      );
     });
 
     it("validates a Password without an uppercase letter", () => {
-      cy.get(PASSWORD_INPUT).type("password1!").blur();
+      SignupForm.enterPassword("password1!").blur();
 
-      expectValidationMessage(PASSWORD_INPUT, PASSWORD_INVALID_MESSAGE);
+      expectValidationMessage(
+        SignupForm.passwordInput,
+        PASSWORD_INVALID_MESSAGE,
+      );
     });
 
     it("validates a Password without a lowercase letter", () => {
-      cy.get(PASSWORD_INPUT).type("PASSWORD1!").blur();
+      SignupForm.enterPassword("PASSWORD1!").blur();
 
-      expectValidationMessage(PASSWORD_INPUT, PASSWORD_INVALID_MESSAGE);
+      expectValidationMessage(
+        SignupForm.passwordInput,
+        PASSWORD_INVALID_MESSAGE,
+      );
     });
 
     it("allows a Password with 8 characters", () => {
-      cy.get(PASSWORD_INPUT).type("Pass1!ab").blur();
+      SignupForm.enterPassword("Pass1!ab").blur();
 
-      expectFieldToBeValid(PASSWORD_INPUT);
+      expectFieldToBeValid(SignupForm.passwordInput);
     });
 
     it("allows a Password with 15 characters", () => {
-      cy.get(PASSWORD_INPUT).type("Password12345!a").blur();
+      SignupForm.enterPassword("Password12345!a").blur();
 
-      expectFieldToBeValid(PASSWORD_INPUT);
+      expectFieldToBeValid(SignupForm.passwordInput);
     });
 
     it("shows a red Password input when validation fails", () => {
-      cy.get(PASSWORD_INPUT).focus().blur();
+      SignupForm.passwordInput.focus().blur();
 
-      cy.get(PASSWORD_INPUT).should(
+      SignupForm.passwordInput.should(
         "have.css",
         "border-color",
         INVALID_BORDER_COLOR,
@@ -337,37 +349,40 @@ describe("Sign up", () => {
     });
 
     it("disables Register when Password validation fails", () => {
-      cy.get(NAME_INPUT).type(VALID_NAME);
-      cy.get(LAST_NAME_INPUT).type(VALID_LAST_NAME);
-      cy.get(EMAIL_INPUT).type(VALID_EMAIL);
-      cy.get(PASSWORD_INPUT).type("password1!").blur();
-      cy.get(REPEAT_PASSWORD_INPUT).type("password1!");
+      SignupForm.enterName(VALID_NAME);
+      SignupForm.enterLastName(VALID_LAST_NAME);
+      SignupForm.enterEmail(VALID_EMAIL);
+      SignupForm.enterPassword("password1!").blur();
+      SignupForm.enterRepeatPassword("password1!");
 
-      cy.contains("button", REGISTER_BUTTON_TEXT).should("be.disabled");
+      SignupForm.isRegisterButtonDisabled();
     });
   });
 
   context("Re-enter password field", () => {
     it("shows that Re-enter password is required", () => {
-      cy.get(REPEAT_PASSWORD_INPUT).focus().blur();
+      SignupForm.repeatPasswordInput.focus().blur();
 
       expectValidationMessage(
-        REPEAT_PASSWORD_INPUT,
+        SignupForm.repeatPasswordInput,
         "Re-enter password required",
       );
     });
 
     it("validates that Re-enter password matches Password", () => {
-      cy.get(PASSWORD_INPUT).type(VALID_PASSWORD);
-      cy.get(REPEAT_PASSWORD_INPUT).type(`${VALID_PASSWORD}1`).blur();
+      SignupForm.enterPassword(VALID_PASSWORD);
+      SignupForm.enterRepeatPassword(`${VALID_PASSWORD}1`).blur();
 
-      expectValidationMessage(REPEAT_PASSWORD_INPUT, "Passwords do not match");
+      expectValidationMessage(
+        SignupForm.repeatPasswordInput,
+        "Passwords do not match",
+      );
     });
 
     it("shows a red Re-enter password input when validation fails", () => {
-      cy.get(REPEAT_PASSWORD_INPUT).focus().blur();
+      SignupForm.repeatPasswordInput.focus().blur();
 
-      cy.get(REPEAT_PASSWORD_INPUT).should(
+      SignupForm.repeatPasswordInput.should(
         "have.css",
         "border-color",
         INVALID_BORDER_COLOR,
@@ -375,13 +390,13 @@ describe("Sign up", () => {
     });
 
     it("disables Register when Re-enter password validation fails", () => {
-      cy.get(NAME_INPUT).type(VALID_NAME);
-      cy.get(LAST_NAME_INPUT).type(VALID_LAST_NAME);
-      cy.get(EMAIL_INPUT).type(VALID_EMAIL);
-      cy.get(PASSWORD_INPUT).type(VALID_PASSWORD);
-      cy.get(REPEAT_PASSWORD_INPUT).type(`${VALID_PASSWORD}1`).blur();
+      SignupForm.enterName(VALID_NAME);
+      SignupForm.enterLastName(VALID_LAST_NAME);
+      SignupForm.enterEmail(VALID_EMAIL);
+      SignupForm.enterPassword(VALID_PASSWORD);
+      SignupForm.enterRepeatPassword(`${VALID_PASSWORD}1`).blur();
 
-      cy.contains("button", REGISTER_BUTTON_TEXT).should("be.disabled");
+      SignupForm.isRegisterButtonDisabled();
     });
   });
 });
